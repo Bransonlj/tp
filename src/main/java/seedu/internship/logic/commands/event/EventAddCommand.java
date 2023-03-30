@@ -21,13 +21,13 @@ import seedu.internship.model.internship.Internship;
 public class EventAddCommand extends EventCommand {
     public static final String COMMAND_WORD = "add";
     public static final String MESSAGE_USAGE = EventCommand.COMMAND_WORD + " "
-            + EventAddCommand.COMMAND_WORD + ": Adds a event to the event catalogue. "
+            + EventAddCommand.COMMAND_WORD + ": Adds an event to the event catalogue.\n"
             + "Parameters: "
             + PREFIX_EVENT_NAME + "EVENT NAME"
             + PREFIX_EVENT_START + "START DATE TIME "
             + PREFIX_EVENT_END + "END DATE TIME "
-            + PREFIX_EVENT_DESCRIPTION + "DESCRIPTION "
-            + "Example: " + EventCommand.COMMAND_WORD + " "
+            + PREFIX_EVENT_DESCRIPTION + "DESCRIPTION"
+            + "\nExample: " + EventCommand.COMMAND_WORD + " "
             + EventAddCommand.COMMAND_WORD + " "
             + PREFIX_EVENT_NAME + "Technical Interview "
             + PREFIX_EVENT_START + "10/09/2023 1500 "
@@ -37,7 +37,8 @@ public class EventAddCommand extends EventCommand {
     public static final String MESSAGE_SUCCESS = "New event added: %1$s";
     public static final String MESSAGE_DUPLICATE_EVENT = "This event already exists in the catalogue";
     public static final String MESSAGE_NO_INTERNSHIP_SELECTED = "Select an internship before adding an event.";
-
+    public static final String MESSAGE_EVENT_CLASH_WARNING = "WARNING: This event CLASHES with another event.\n"
+            + "New event added: %1$s\n" + "Use the clash command to see specifics.";
     public static final String MESSAGE_END_BEFORE_START = "End Date Time cannot be before Start Date Time.";
 
     private final Event eventToAdd;
@@ -70,9 +71,23 @@ public class EventAddCommand extends EventCommand {
             throw new CommandException(MESSAGE_DUPLICATE_EVENT);
         }
 
+        //Checking for clashes
+        model.updateFilteredEventList(Model.PREDICATE_SHOW_ALL_EVENTS);
+        boolean isClashing = false;
+        for (Event e : model.getFilteredEventList()) {
+            if (eventToAdd.isClash(e)) {
+                isClashing = true;
+                break;
+            };
+        }
+
         model.addEvent(eventToAdd);
         model.updateFilteredEventList(new EventByInternship(selectedIntern));
         ObservableList<Event> events = model.getFilteredEventList();
+        if (isClashing) {
+            return new CommandResult(String.format(MESSAGE_EVENT_CLASH_WARNING, eventToAdd), ResultType.SHOW_INFO,
+                    selectedIntern, events);
+        }
 
         return new CommandResult(String.format(MESSAGE_SUCCESS, eventToAdd), ResultType.SHOW_INFO,
                 selectedIntern, events);
